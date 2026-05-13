@@ -53,8 +53,17 @@
       <div class="card">
         <div class="row-between">
           <h3>Imágenes sin asignar (<span id="unassigned-count">0</span>)</h3>
-          <button id="clear-unassigned" class="btn btn-ghost" hidden>Eliminar todas</button>
+          <div class="header-actions">
+            <button id="auto-group" class="btn btn-secondary" hidden>
+              ✨ Agrupar automáticamente
+            </button>
+            <button id="clear-unassigned" class="btn btn-ghost" hidden>Eliminar todas</button>
+          </div>
         </div>
+        <p class="muted small" id="auto-group-hint" style="margin: -4px 0 0;">
+          Si los archivos comparten nombre (ej. <code>silla-roja-frontal.jpg</code>, <code>silla-roja-lateral.jpg</code>),
+          pulsa "Agrupar automáticamente" y los detecto.
+        </p>
         <div id="unassigned-grid" class="image-grid empty">
           <p class="muted center">Aún no has subido ninguna imagen.</p>
         </div>

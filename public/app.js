@@ -74,6 +74,120 @@ function fileToDataURL(file) {
   });
 }
 
+// ===== Auto-agrupado por nombre =====
+const VARIANT_KEYWORDS = [
+  // Español — posición
+  'frontal', 'lateral', 'trasera', 'trasero', 'delantera', 'delantero',
+  'frente', 'atras', 'arriba', 'abajo', 'derecha', 'izquierda',
+  'superior', 'inferior', 'central', 'centro', 'posterior', 'anterior',
+  'izq', 'der',
+  // Español — tipo de vista
+  'detalle', 'detalles', 'vista', 'perspectiva', 'angulo', 'ángulo',
+  'cerca', 'plano', 'macro', 'perfil', 'panoramica', 'panorámica',
+  'general', 'completo', 'completa',
+  // Español — uso/contexto
+  'principal', 'secundaria', 'secundario', 'alternativa', 'alternativo',
+  'extra', 'adicional', 'embalaje', 'caja', 'producto', 'ambiente',
+  // English — position
+  'front', 'back', 'side', 'top', 'bottom', 'left', 'right', 'rear',
+  'upper', 'lower', 'center', 'middle',
+  // English — view type
+  'detail', 'details', 'closeup', 'close-up', 'zoom', 'view', 'angle',
+  'perspective', 'profile', 'iso', 'isometric', 'macro', 'wide',
+  // English — others
+  'main', 'primary', 'secondary', 'alternative', 'alt', 'full',
+  'complete', 'extra', 'overview', 'packaging', 'box', 'angle1', 'angle2',
+];
+
+function detectProductName(filename) {
+  let name = filename.replace(/\.[^.]+$/, '').toLowerCase();
+  const variantRe = new RegExp(`[-_.\\s]+(?:${VARIANT_KEYWORDS.join('|')})$`, 'i');
+
+  let prev;
+  let iterations = 0;
+  do {
+    prev = name;
+    // Quitar paréntesis al final tipo "(1)" o "(copy)"
+    name = name.replace(/[-_.\s]*\([^)]*\)\s*$/, '');
+    // Quitar número final con separador (ej. "-1", "_02", " 003", ".4")
+    name = name.replace(/[-_.\s]+\d+$/, '');
+    // Quitar palabra variante al final (frontal, lateral, etc.)
+    name = name.replace(variantRe, '');
+    iterations++;
+  } while (name !== prev && iterations < 10);
+
+  return name.replace(/[-_.\s]+$/, '').trim();
+}
+
+function titleCase(s) {
+  return s
+    .split(/[-_.\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function autoGroup() {
+  const items = unassignedImages();
+  if (items.length < 2) {
+    toast('Se necesitan al menos 2 imágenes sin asignar para agrupar.', 'warn');
+    return;
+  }
+
+  const buckets = new Map();
+  for (const img of items) {
+    const key = detectProductName(img.name);
+    if (!key) continue;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(img);
+  }
+
+  const groupings = Array.from(buckets.entries())
+    .filter(([, imgs]) => imgs.length >= 2)
+    .map(([key, imgs]) => ({ key, displayName: titleCase(key), images: imgs }))
+    .sort((a, b) => b.images.length - a.images.length);
+
+  if (groupings.length === 0) {
+    toast(
+      'No detecté patrones para agrupar. Los nombres de los archivos parecen muy distintos entre sí.',
+      'warn',
+      5000
+    );
+    return;
+  }
+
+  const totalImgs = groupings.reduce((sum, g) => sum + g.images.length, 0);
+  const summary = groupings
+    .map((g) => `• ${g.displayName}: ${g.images.length} imágenes`)
+    .join('\n');
+  const msg =
+    `Detecté ${groupings.length} grupo${groupings.length !== 1 ? 's' : ''} posible${
+      groupings.length !== 1 ? 's' : ''
+    }:\n\n${summary}\n\n${totalImgs} imágenes se asignarán. ¿Crear los grupos?`;
+
+  if (!confirm(msg)) return;
+
+  for (const g of groupings) {
+    const groupId = `g-${nextGroupId++}`;
+    state.groups.set(groupId, { id: groupId, name: g.displayName });
+    state.groupOrder.push(groupId);
+    for (const img of g.images) {
+      const stateImg = state.images.get(img.id);
+      if (stateImg) stateImg.groupId = groupId;
+    }
+  }
+
+  renderUnassigned();
+  renderGroups();
+  updateContinueButton();
+
+  toast(
+    `${groupings.length} grupo${groupings.length !== 1 ? 's creados' : ' creado'} con ${totalImgs} imágenes.`,
+    'success',
+    4000
+  );
+}
+
 // ===== Session =====
 async function initSession() {
   try {
@@ -230,6 +344,7 @@ function renderUnassigned() {
   const items = unassignedImages();
   $('#unassigned-count').textContent = String(items.length);
   $('#clear-unassigned').hidden = items.length === 0;
+  $('#auto-group').hidden = items.length < 2;
 
   if (items.length === 0) {
     grid.classList.add('empty');
@@ -734,6 +849,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupDropzone();
 
   $('#add-group').addEventListener('click', () => addGroup());
+
+  $('#auto-group').addEventListener('click', autoGroup);
 
   $('#clear-unassigned').addEventListener('click', () => {
     if (!confirm('¿Eliminar todas las imágenes sin asignar?')) return;
