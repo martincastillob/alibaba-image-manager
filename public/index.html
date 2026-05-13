@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Imágenes — Catálogo Alibaba.com</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <h1>Gestor de Imágenes para Catálogo Alibaba.com</h1>
+      <p class="subtitle">
+        Sube tus imágenes, organízalas por producto y descarga un Excel con las URLs públicas
+        listas para importar en Alibaba.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <ol class="steps" id="steps">
+      <li class="step active" data-step="1"><span class="step-num">1</span> Organizar</li>
+      <li class="step" data-step="2"><span class="step-num">2</span> Subir</li>
+      <li class="step" data-step="3"><span class="step-num">3</span> Descargar Excel</li>
+    </ol>
+
+    <!-- ====== PASO 1: ORGANIZAR ====== -->
+    <section id="view-organize" class="view active">
+      <div class="card">
+        <h2>1. Selecciona y organiza tus imágenes</h2>
+        <p class="muted">
+          Formatos: JPG o PNG · Máx. 4MB por imagen · Recomendado: 800×800px o superior.
+        </p>
+
+        <div id="dropzone" class="dropzone">
+          <p class="dropzone-text">Arrastra imágenes aquí</p>
+          <p class="muted">o</p>
+          <label class="btn btn-primary">
+            Explorar archivos
+            <input
+              type="file"
+              id="file-input"
+              accept="image/jpeg,image/png"
+              multiple
+              hidden
+            />
+          </label>
+        </div>
+
+        <div id="warnings" class="warnings" hidden></div>
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <h3>Imágenes sin asignar (<span id="unassigned-count">0</span>)</h3>
+          <button id="clear-unassigned" class="btn btn-ghost" hidden>Eliminar todas</button>
+        </div>
+        <div id="unassigned-grid" class="image-grid empty">
+          <p class="muted center">Aún no has subido ninguna imagen.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <h3>Grupos de Producto</h3>
+          <button id="add-group" class="btn btn-secondary">+ Añadir grupo</button>
+        </div>
+        <div id="groups-list" class="groups-list">
+          <p class="muted center" id="no-groups-msg">
+            Crea un grupo para empezar a organizar tus imágenes por producto.
+          </p>
+        </div>
+      </div>
+
+      <div class="actions-bar">
+        <button id="btn-to-upload" class="btn btn-primary btn-lg" disabled>
+          Continuar a subida →
+        </button>
+      </div>
+    </section>
+
+    <!-- ====== PASO 2: SUBIR ====== -->
+    <section id="view-upload" class="view">
+      <div class="card">
+        <h2>2. Subiendo imágenes</h2>
+        <p class="muted">No cierres esta ventana hasta que finalice la subida.</p>
+
+        <div class="global-progress">
+          <div class="progress-bar">
+            <div id="global-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="global-progress-text" class="muted">0 / 0 imágenes subidas</p>
+        </div>
+      </div>
+
+      <div id="upload-groups" class="upload-groups"></div>
+
+      <div class="actions-bar">
+        <button id="btn-cancel-upload" class="btn btn-ghost" hidden>← Volver a organizar</button>
+        <button id="btn-to-download" class="btn btn-primary btn-lg" disabled>
+          Continuar a descarga →
+        </button>
+      </div>
+    </section>
+
+    <!-- ====== PASO 3: DESCARGAR ====== -->
+    <section id="view-download" class="view">
+      <div class="card success-card">
+        <div class="success-icon">✓</div>
+        <h2>Subida completada</h2>
+        <p id="summary-text" class="muted"></p>
+      </div>
+
+      <div class="card">
+        <h3>Descarga tu Excel</h3>
+        <p class="muted">
+          Contiene dos columnas: <strong>Image Title</strong> y <strong>Image URL</strong>,
+          agrupadas por producto. Lista para importar en Alibaba.
+        </p>
+        <div class="download-actions">
+          <button id="btn-download-excel" class="btn btn-primary btn-lg">
+            ⬇ Descargar Excel
+          </button>
+          <button id="btn-restart" class="btn btn-ghost">Empezar nueva sesión</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="muted small">
+        Sesión privada · ID: <span id="session-id-display">—</span> ·
+        Refrescar la página inicia una sesión nueva.
+      </p>
+    </div>
+  </footer>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
