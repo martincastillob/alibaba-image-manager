@@ -111,12 +111,14 @@ function detectProductName(filename) {
     name = name.replace(/[-_.\s]*\([^)]*\)\s*$/, '');
     // Quitar número final con separador (ej. "-1", "_02", " 003", ".4")
     name = name.replace(/[-_.\s]+\d+$/, '');
+    // Quitar número inicial con separador (ej. "01 ", "1_", "001-")
+    name = name.replace(/^\d+[-_.\s]+/, '');
     // Quitar palabra variante al final (frontal, lateral, etc.)
     name = name.replace(variantRe, '');
     iterations++;
   } while (name !== prev && iterations < 10);
 
-  return name.replace(/[-_.\s]+$/, '').trim();
+  return name.replace(/^[-_.\s]+|[-_.\s]+$/g, '').trim();
 }
 
 function titleCase(s) {
