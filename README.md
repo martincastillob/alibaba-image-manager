@@ -2,7 +2,7 @@
 
 Herramienta web pública para que clientes suban imágenes de producto, las organicen por grupos, y descarguen un Excel con URLs públicas listas para importar en Alibaba.com.
 
-- **Subida**: ImgBB (gratis, ilimitado)
+- **Subida**: Cloudinary (gratis, sin tarjeta, ~25GB, URLs permanentes)
 - **Backend**: Node.js + Express (compatible con Vercel serverless)
 - **Frontend**: HTML + CSS + JavaScript (sin frameworks)
 - **Despliegue**: Vercel (gratis para siempre)
@@ -13,7 +13,7 @@ Herramienta web pública para que clientes suban imágenes de producto, las orga
 
 1. El cliente abre el link público — el servidor le asigna un **sessionId único**.
 2. Sube sus imágenes, las organiza en **grupos de producto** (entre 3 y 6 imágenes por producto). Las que no asigne también se procesan como filas individuales.
-3. Pulsa "Subir" — el servidor sube cada imagen a **ImgBB** con un nombre normalizado.
+3. Pulsa "Subir" — el servidor sube cada imagen a **Cloudinary** bajo la ruta `alibaba-catalogo/{sessionId}/{producto}/`, con un nombre normalizado.
 4. Descarga un **Excel** con el formato oficial de Alibaba:
    - Columna A: `* Product title`
    - Columnas B-G: `* Product image 1` ... `Product image 6`
@@ -33,7 +33,7 @@ Cada sesión es independiente. Refrescar la página inicia una nueva sesión.
 ├── server/             # Lógica del backend
 │   ├── app.js          # Express app (sin .listen)
 │   ├── index.js        # Launcher para dev local
-│   ├── uploader.js     # Subida a ImgBB
+│   ├── uploader.js     # Subida a Cloudinary (función intercambiable)
 │   ├── excel.js        # Generación del Excel
 │   └── session.js      # UUID v4 por sesión
 ├── api/
@@ -54,7 +54,7 @@ npm install
 
 # 2. Configurar variables
 cp .env.example .env
-# Edita .env y pon tu IMGBB_API_KEY
+# Edita .env y pon tus credenciales de Cloudinary
 
 # 3. Arrancar
 npm start
@@ -62,11 +62,11 @@ npm start
 
 Abre http://localhost:3000
 
-### Obtener la API key de ImgBB
+### Obtener las credenciales de Cloudinary
 
-1. Crea cuenta gratis en https://imgbb.com/
-2. Ve a https://api.imgbb.com/ → "About the API" → "Get API key"
-3. Copia la clave generada y ponla en `.env`
+1. Crea cuenta gratis (sin tarjeta) en https://cloudinary.com/users/register_free
+2. En el Dashboard verás **Cloud Name**, **API Key** y **API Secret**
+3. Cópialos a las tres variables de `.env`
 
 ---
 
@@ -96,15 +96,17 @@ Verifica en GitHub que el archivo `.env` **no** se subió (debe estar excluido p
    - **Root Directory**: deja vacío.
    - **Build / Output**: no toques nada.
 
-### Paso 3: Añadir la variable de entorno
+### Paso 3: Añadir las variables de entorno
 
-Antes de pulsar "Deploy":
+Antes de pulsar "Deploy", despliega la sección **"Environment Variables"** y añade las tres:
 
-1. Despliega la sección **"Environment Variables"**.
-2. Añade:
-   - **Name**: `IMGBB_API_KEY`
-   - **Value**: tu API key de ImgBB
-3. Pulsa **"Deploy"**.
+| Name | Value |
+|---|---|
+| `CLOUDINARY_CLOUD_NAME` | tu cloud name |
+| `CLOUDINARY_API_KEY` | tu API key |
+| `CLOUDINARY_API_SECRET` | tu API secret |
+
+Luego pulsa **"Deploy"**.
 
 ### Paso 4: ¡Listo!
 
@@ -126,7 +128,7 @@ A partir de aquí, cada `git push` a la rama `main` redesplegará el sitio autom
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/api/session` | Devuelve `{ sessionId }` único. |
-| `POST` | `/api/upload` | Sube una imagen a ImgBB. Body multipart: `image`, `sessionId`, `productName`, `index`. |
+| `POST` | `/api/upload` | Sube una imagen a Cloudinary. Body multipart: `image`, `sessionId`, `productName`, `index`. |
 | `POST` | `/api/excel` | Devuelve el `.xlsx`. Body JSON: `{ groups, unassigned }`. |
 | `GET` | `/api/health` | Devuelve `{ ok: true }`. |
 

@@ -119,13 +119,18 @@ app.post('/api/upload', uploadLimiter, upload.single('image'), async (req, res) 
         .json({ error: 'El nombre del producto no contiene caracteres válidos.' });
     }
 
-    const baseFilename = `${safeName}-${indexNum}`;
-    const result = await uploadImage(req.file.buffer, baseFilename);
+    const result = await uploadImage(req.file.buffer, {
+      sessionId,
+      productName: safeName,
+      index: indexNum,
+      ext: type.ext,
+      mime: type.mime,
+    });
 
     return res.json({
       success: true,
       url: result.url,
-      filename: `${baseFilename}.${type.ext}`,
+      filename: result.filename,
     });
   } catch (err) {
     console.error('[upload] error:', err.message);
