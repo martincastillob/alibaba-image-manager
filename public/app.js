@@ -202,6 +202,43 @@ async function initSession() {
   }
 }
 
+// ===== Image compression =====
+async function compressImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const blobUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
+      const MAX_DIM = 2000;
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      if (w > MAX_DIM || h > MAX_DIM) {
+        const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      const tryQuality = (q) => {
+        canvas.toBlob((blob) => {
+          if (!blob) { resolve(file); return; }
+          if (blob.size <= CONFIG.MAX_FILE_SIZE || q <= 0.5) {
+            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+          } else {
+            tryQuality(Math.round((q - 0.1) * 10) / 10);
+          }
+        }, 'image/jpeg', q);
+      };
+      tryQuality(0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
+    img.src = blobUrl;
+  });
+}
+
 // ===== File ingestion =====
 async function ingestFiles(fileList) {
   const files = Array.from(fileList);
@@ -218,24 +255,31 @@ async function ingestFiles(fileList) {
       continue;
     }
 
+    let activeFile = file;
     if (file.size > CONFIG.MAX_FILE_SIZE) {
-      const mb = (file.size / 1024 / 1024).toFixed(1);
-      errors.push(`${file.name}: pesa ${mb}MB (máximo ${CONFIG.MAX_FILE_SIZE_LABEL}).`);
-      continue;
+      const origMb = (file.size / 1024 / 1024).toFixed(1);
+      activeFile = await compressImage(file);
+      if (activeFile.size > CONFIG.MAX_FILE_SIZE) {
+        const mb = (activeFile.size / 1024 / 1024).toFixed(1);
+        errors.push(`${file.name}: pesa ${mb}MB y no se pudo comprimir lo suficiente.`);
+        continue;
+      }
+      const newMb = (activeFile.size / 1024 / 1024).toFixed(1);
+      warnings.push(`${file.name}: comprimida automáticamente (${origMb}MB → ${newMb}MB).`);
     }
 
-    const dims = await readImageDimensions(file);
+    const dims = await readImageDimensions(activeFile);
     if (!dims) {
       errors.push(`${file.name}: no se pudo leer la imagen.`);
       continue;
     }
 
-    const dataUrl = await fileToDataURL(file);
+    const dataUrl = await fileToDataURL(activeFile);
     const imageId = `img-${nextImageId++}`;
 
     state.images.set(imageId, {
       id: imageId,
-      file,
+      file: activeFile,
       name: file.name,
       width: dims.width,
       height: dims.height,
