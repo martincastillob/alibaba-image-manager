@@ -181,10 +181,26 @@ function autoGroup() {
   const summary = groupings
     .map((g) => `• ${g.displayName}: ${g.images.length} imágenes`)
     .join('\n');
+
+  // Detectar grupos con nombres casi iguales que solo difieren en un número final
+  // ej. "Producto1" y "Producto2" → misma base "Producto" → posible confusión
+  const baseOf = (name) => name.replace(/\s*\d+$/, '').trim().toLowerCase();
+  const baseMap = new Map();
+  for (const g of groupings) {
+    const base = baseOf(g.displayName);
+    if (!baseMap.has(base)) baseMap.set(base, []);
+    baseMap.get(base).push(g.displayName);
+  }
+  const similarPairs = [...baseMap.values()].filter(names => names.length > 1);
+  const warningBlock = similarPairs.length > 0
+    ? '\n\n⚠️ Estos grupos tienen nombres muy similares. Comprueba que no sean productos distintos mezclados:\n' +
+      similarPairs.map(names => `  · ${names.join(' / ')}`).join('\n')
+    : '';
+
   const msg =
     `Detecté ${groupings.length} grupo${groupings.length !== 1 ? 's' : ''} posible${
       groupings.length !== 1 ? 's' : ''
-    }:\n\n${summary}\n\n${totalImgs} imágenes se asignarán. ¿Crear los grupos?`;
+    }:\n\n${summary}${warningBlock}\n\n${totalImgs} imágenes se asignarán. ¿Crear los grupos?`;
 
   if (!confirm(msg)) return;
 
