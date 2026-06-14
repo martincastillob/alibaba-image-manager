@@ -222,17 +222,31 @@ async function compressImage(file) {
       canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 
-      const tryQuality = (q) => {
+      // Binary search: find the highest JPEG quality that fits under MAX_FILE_SIZE.
+      // 6 iterations → precision ~0.007 quality units, plenty accurate.
+      let lo = 0.50, hi = 0.95, bestBlob = null;
+      const search = (lo, hi, iters) => {
+        const mid = Math.round(((lo + hi) / 2) * 100) / 100;
         canvas.toBlob((blob) => {
           if (!blob) { resolve(file); return; }
-          if (blob.size <= CONFIG.MAX_FILE_SIZE || q <= 0.5) {
-            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+          if (blob.size <= CONFIG.MAX_FILE_SIZE) {
+            bestBlob = blob;
+            if (iters <= 0 || hi - lo < 0.03) {
+              resolve(new File([bestBlob], file.name, { type: 'image/jpeg' }));
+            } else {
+              search(mid, hi, iters - 1); // still fits — try higher quality
+            }
           } else {
-            tryQuality(Math.round((q - 0.1) * 10) / 10);
+            if (iters <= 0) {
+              // Use best found so far (may still be over limit — backend will reject)
+              resolve(new File([bestBlob ?? blob], file.name, { type: 'image/jpeg' }));
+            } else {
+              search(lo, mid, iters - 1); // too big — try lower quality
+            }
           }
-        }, 'image/jpeg', q);
+        }, 'image/jpeg', mid);
       };
-      tryQuality(0.85);
+      search(lo, hi, 6);
     };
     img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
     img.src = blobUrl;
