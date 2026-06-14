@@ -80,23 +80,38 @@ const VARIANT_KEYWORDS = [
   'frontal', 'lateral', 'trasera', 'trasero', 'delantera', 'delantero',
   'frente', 'atras', 'arriba', 'abajo', 'derecha', 'izquierda',
   'superior', 'inferior', 'central', 'centro', 'posterior', 'anterior',
-  'izq', 'der',
+  'izq', 'der', 'dcha', 'izqda', 'lat', 'tras', 'ant', 'post', 'frt',
+  'verso', 'anverso', 'reverso',
   // Español — tipo de vista
   'detalle', 'detalles', 'vista', 'perspectiva', 'angulo', 'ángulo',
   'cerca', 'plano', 'macro', 'perfil', 'panoramica', 'panorámica',
-  'general', 'completo', 'completa',
-  // Español — uso/contexto
+  'general', 'completo', 'completa', 'diagonal', 'esquina', 'render',
+  'renderizado', 'renderizada',
+  // Español — estado/contexto
   'principal', 'secundaria', 'secundario', 'alternativa', 'alternativo',
   'extra', 'adicional', 'embalaje', 'caja', 'producto', 'ambiente',
+  'abierto', 'abierta', 'cerrado', 'cerrada', 'tapa', 'etiqueta',
+  'uso', 'aplicacion', 'aplicación', 'lifestyle', 'ambientada', 'ambientado',
+  'packshot', 'pack', 'hero', 'muestra',
+  // Español — sufijos de exportación/calidad
+  'final', 'v1', 'v2', 'v3', 'copia', 'retocada', 'retocado', 'editada', 'editado',
+  'web', 'print', 'rgb', 'cmyk', 'trans', 'transparente', 'fondo',
+  'nobg', 'bg', 'blanco', 'blanca',
   // English — position
   'front', 'back', 'side', 'top', 'bottom', 'left', 'right', 'rear',
-  'upper', 'lower', 'center', 'middle',
+  'upper', 'lower', 'center', 'middle', 'corner', 'diagonal',
   // English — view type
   'detail', 'details', 'closeup', 'close-up', 'zoom', 'view', 'angle',
   'perspective', 'profile', 'iso', 'isometric', 'macro', 'wide',
-  // English — others
+  'flat', 'flatlay', 'flat-lay', 'render', 'rendering', 'shot',
+  // English — state/context
   'main', 'primary', 'secondary', 'alternative', 'alt', 'full',
-  'complete', 'extra', 'overview', 'packaging', 'box', 'angle1', 'angle2',
+  'complete', 'extra', 'overview', 'packaging', 'box',
+  'open', 'closed', 'label', 'cap', 'lid', 'hero', 'lifestyle', 'studio',
+  // English — export/quality suffixes
+  'final', 'copy', 'edited', 'retouched', 'retouch',
+  'web', 'print', 'rgb', 'cmyk', 'trans', 'transparent', 'nobg', 'bg',
+  'white', 'hd', 'hq', 'hr', 'lr', 'highres', 'lowres',
 ];
 
 function detectProductName(filename) {
@@ -109,11 +124,15 @@ function detectProductName(filename) {
     prev = name;
     // Quitar paréntesis al final tipo "(1)" o "(copy)"
     name = name.replace(/[-_.\s]*\([^)]*\)\s*$/, '');
+    // Quitar dimensiones tipo "_2000x2000", "_1500x1500"
+    name = name.replace(/[-_.\s]+\d+[xX]\d+$/, '');
+    // Quitar marcador de versión tipo "_v2", "_v3"
+    name = name.replace(/[-_.\s]+v\d+$/i, '');
     // Quitar número final con separador (ej. "-1", "_02", " 003", ".4")
     name = name.replace(/[-_.\s]+\d+$/, '');
     // Quitar número inicial con separador (ej. "01 ", "1_", "001-")
     name = name.replace(/^\d+[-_.\s]+/, '');
-    // Quitar palabra variante al final (frontal, lateral, etc.)
+    // Quitar palabra variante al final (frontal, lateral, trans, hd, etc.)
     name = name.replace(variantRe, '');
     iterations++;
   } while (name !== prev && iterations < 10);
