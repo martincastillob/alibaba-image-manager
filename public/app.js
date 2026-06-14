@@ -101,7 +101,7 @@ const VARIANT_KEYWORDS = [
 
 function detectProductName(filename) {
   let name = filename.replace(/\.[^.]+$/, '').toLowerCase();
-  const variantRe = new RegExp(`[-_.\\s]+(?:${VARIANT_KEYWORDS.join('|')})$`, 'i');
+  const variantRe = new RegExp(`[-_.\\s]+(?:${VARIANT_KEYWORDS.join('|')})\\d*$`, 'i');
 
   let prev;
   let iterations = 0;
